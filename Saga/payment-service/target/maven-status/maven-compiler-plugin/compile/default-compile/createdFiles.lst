@@ -1,0 +1,4 @@
+com\saga\payment\PaymentServiceApplication.class
+com\saga\payment\producer\PaymentFailedEventProducer.class
+com\saga\payment\config\KafkaConfig.class
+com\saga\payment\consumer\OrderEventConsumer.class

@@ -1,0 +1,5 @@
+com\saga\shared\event\OrderCreatedEvent.class
+com\saga\shared\event\OrderFailedEvent.class
+com\saga\shared\event\NotificationEvent.class
+com\saga\shared\event\PaymentFailedEvent.class
+com\saga\shared\event\PaymentProcessedEvent.class

@@ -1,0 +1,68 @@
+# Building a Resilient Saga Orchestration System with Spring Boot, Kafka, and Compensation Logic
+
+## Introduction
+In modern microservices architectures, distributed transactions are a challenge. The Saga pattern is a proven solution for managing long-running, multi-step business processes across services, ensuring data consistency without locking resources. In this article, we’ll walk through designing and implementing a robust Saga orchestration system using Java, Spring Boot, Apache Kafka, and compensation logic for failure handling.
+
+## Why Saga Pattern?
+Traditional distributed transactions (2PC) are not scalable for microservices. The Saga pattern breaks a transaction into a series of local transactions, each managed by a participating service. If a step fails, compensating actions are triggered to undo the previous steps, ensuring eventual consistency.
+
+**References:**
+- [Saga Pattern - Microservices.io](https://microservices.io/patterns/data/saga.html)
+- [Distributed Sagas - Chris Richardson](https://www.infoq.com/articles/saga-pattern/)
+
+## System Overview
+Our system consists of three microservices:
+- **Order Service:** Accepts and validates orders, initiates the saga.
+- **Payment Service:** Processes payments, acknowledges or fails the order.
+- **Notification Service:** Notifies users of order/payment status.
+
+All services communicate asynchronously via Apache Kafka topics. A shared module defines event classes for type safety and reusability.
+
+## Key Features
+- **Event-Driven Communication:** Services publish and consume events using Kafka.
+- **Compensation Logic:** If a service fails or times out, previous steps are rolled back using compensation events.
+- **Timeout Handling:** If an acknowledgment is not received in time, compensation is triggered automatically.
+- **Centralized Event Definitions:** Shared event classes ensure consistency across services.
+
+## Implementation Highlights
+### 1. Shared Event Module
+All event classes (e.g., `OrderCreatedEvent`, `PaymentProcessedEvent`, `OrderFailedEvent`) are defined in a shared Maven module, ensuring all services use the same event structure.
+
+### 2. Order Service
+- Publishes `OrderCreatedEvent` to Kafka after validation.
+- Registers the order for timeout tracking.
+- Listens for `PaymentProcessedEvent` to acknowledge successful payment.
+- If no acknowledgment is received within a timeout, publishes `OrderFailedEvent` as compensation.
+
+### 3. Payment Service
+- Listens for `OrderCreatedEvent`.
+- Processes payment and publishes either `PaymentProcessedEvent` (success) or `PaymentFailedEvent` (failure).
+
+### 4. Notification Service
+- Listens for `OrderFailedEvent` and `PaymentProcessedEvent`.
+- Notifies users of order or payment status.
+
+### 5. Compensation and Timeout Logic
+A background watcher in the order service checks for orders that have not received payment acknowledgment within a set timeout (e.g., 15 seconds). If the timeout expires, a compensation event is published to roll back the order.
+
+## Example: Order Creation Flow
+1. **Order Service:** Receives order, validates, publishes `OrderCreatedEvent`, and starts timeout tracking.
+2. **Payment Service:** Consumes event, processes payment, publishes `PaymentProcessedEvent` or `PaymentFailedEvent`.
+3. **Order Service:** On `PaymentProcessedEvent`, acknowledges and completes the saga. On timeout or `PaymentFailedEvent`, publishes `OrderFailedEvent`.
+4. **Notification Service:** Notifies user of the outcome.
+
+## Error Handling and Best Practices
+- All services use SLF4J logging for observability.
+- Exception handling is implemented in all Kafka consumers.
+- Group IDs and Kafka properties are externalized in `application.properties` for flexibility.
+- Unused code and classes are regularly cleaned up for maintainability.
+
+## Conclusion
+The Saga pattern, combined with event-driven communication and compensation logic, enables robust, scalable, and resilient microservices. By leveraging Spring Boot and Kafka, you can orchestrate complex business processes with confidence, even in the face of partial failures.
+
+**Further Reading:**
+- [Spring Boot Kafka Documentation](https://docs.spring.io/spring-kafka/docs/current/reference/html/)
+- [Microservices Patterns Book](https://microservices.io/book)
+
+---
+*This article is based on a real-world implementation. Feel free to adapt the code and design for your own use cases!*

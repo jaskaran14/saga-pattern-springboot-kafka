@@ -1,0 +1,4 @@
+com\saga\notification\config\KafkaConfig.class
+com\saga\notification\NotificationServiceApplication.class
+com\saga\notification\consumer\OrderFailedEventConsumer.class
+com\saga\notification\consumer\PaymentEventConsumer.class
